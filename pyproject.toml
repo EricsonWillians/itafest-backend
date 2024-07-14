@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "itafest"
+version = "0.1.0"
+description = "A commerce hub app for Itajubá"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.9.7 || >3.9.7,<4.0"
+fastapi = "^0.70.0"
+uvicorn = "^0.15.0"
+pydantic = "^1.8"
+motor = "^2.5.1"
+beanie = "^1.8.0"
+streamlit = "^1.36.0"
+nest-asyncio = "^1.6.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
