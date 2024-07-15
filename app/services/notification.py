@@ -8,7 +8,7 @@ from datetime import datetime
 # Replace with your Firebase server key
 FIREBASE_SERVER_KEY = "YOUR_FIREBASE_SERVER_KEY"
 
-async def get_notification_by_id(notification_id: PydanticObjectId) -> Optional[NotificationOut]:
+async def get_notification(notification_id: PydanticObjectId) -> Optional[NotificationOut]:
     notification = await Notification.get(notification_id)
     if notification:
         return NotificationOut(

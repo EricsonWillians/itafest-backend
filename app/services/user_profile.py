@@ -13,6 +13,26 @@ from fastapi import HTTPException, status
 from datetime import datetime
 
 
+async def get_user_profile(profile_id: PydanticObjectId) -> Optional[UserProfileOut]:
+    profile = await UserProfile.get(profile_id)
+    if profile:
+        return UserProfileOut(
+            id=profile.id,
+            user_id=profile.user_id,
+            bio=profile.bio,
+            profile_picture=profile.profile_picture,
+            social_media_links=profile.social_media_links,
+            emoji_ratings=profile.emoji_ratings,
+            comments=profile.comments,
+            show_comments=profile.show_comments,
+            allow_chat=profile.allow_chat,
+            blocked_users=profile.blocked_users,
+            created_at=profile.created_at,
+            updated_at=profile.updated_at,
+        )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+
+
 async def get_user_profile_by_id(profile_id: PydanticObjectId) -> Optional[UserProfileOut]:
     profile = await UserProfile.get(profile_id)
     if profile:
@@ -84,7 +104,7 @@ async def create_user_profile(profile_in: UserProfileCreate) -> UserProfileOut:
 
 
 async def update_user_profile(profile_id: PydanticObjectId, profile_in: UserProfileUpdate) -> UserProfileOut:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
     
     if profile_in.bio is not None:
         profile.bio = profile_in.bio
@@ -119,12 +139,12 @@ async def update_user_profile(profile_id: PydanticObjectId, profile_in: UserProf
 
 
 async def delete_user_profile(profile_id: PydanticObjectId) -> None:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
     await profile.delete()
 
 
 async def add_comment_to_profile(profile_id: PydanticObjectId, comment: Comment) -> UserProfileOut:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
     profile.comments.append(comment)
     profile.updated_at = datetime.utcnow()
     await profile.save()
@@ -146,7 +166,7 @@ async def add_comment_to_profile(profile_id: PydanticObjectId, comment: Comment)
 
 
 async def add_emoji_rating_to_profile(profile_id: PydanticObjectId, emoji: EmojiType) -> UserProfileOut:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
 
     if emoji == EmojiType.HEART:
         profile.emoji_ratings.hearts += 1
@@ -191,7 +211,7 @@ async def add_emoji_rating_to_profile(profile_id: PydanticObjectId, emoji: Emoji
 
 
 async def block_user(profile_id: PydanticObjectId, user_to_block_id: str) -> UserProfileOut:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
     if user_to_block_id not in profile.blocked_users:
         profile.blocked_users.append(user_to_block_id)
         profile.updated_at = datetime.utcnow()
@@ -214,12 +234,12 @@ async def block_user(profile_id: PydanticObjectId, user_to_block_id: str) -> Use
 
 
 async def unblock_user(profile_id: PydanticObjectId, user_to_unblock_id: str) -> UserProfileOut:
-    profile = await get_user_profile_by_id(profile_id)
+    profile = await get_user_profile(profile_id)
     if user_to_unblock_id in profile.blocked_users:
         profile.blocked_users.remove(user_to_unblock_id)
         profile.updated_at = datetime.utcnow()
         await profile.save()
-    
+        
     return UserProfileOut(
         id=profile.id,
         user_id=profile.user_id,

@@ -2,6 +2,7 @@ from beanie import Document, PydanticObjectId
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
 
 
 class SocialMediaLinks(BaseModel):
@@ -69,6 +70,20 @@ class EmojiRating(BaseModel):
                 "neutral_face": 1
             }
         }
+
+
+class EmojiType(str, Enum):
+    HEART = "heart"
+    THUMBS_UP = "thumbs_up"
+    SMILEY_FACE = "smiley_face"
+    FIRE = "fire"
+    CLAPPING_HANDS = "clapping_hands"
+    STAR = "star"
+    PARTY_POPPER = "party_popper"
+    MUSICAL_NOTE = "musical_note"
+    COCKTAIL = "cocktail"
+    SPARKLES = "sparkles"
+    NEUTRAL_FACE = "neutral_face"
 
 
 class UserProfile(Document):

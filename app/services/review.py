@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
 
-async def get_review_by_id(review_id: PydanticObjectId) -> Optional[ReviewOut]:
+async def get_review(review_id: PydanticObjectId) -> Optional[ReviewOut]:
     review = await Review.get(review_id)
     if review:
         return ReviewOut(
@@ -18,7 +18,6 @@ async def get_review_by_id(review_id: PydanticObjectId) -> Optional[ReviewOut]:
             updated_at=review.updated_at
         )
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
-
 
 async def get_reviews_by_target_id(target_id: str, target_type: str) -> List[ReviewOut]:
     reviews = await Review.find(Review.target_id == target_id, Review.target_type == target_type).to_list()
@@ -34,7 +33,6 @@ async def get_reviews_by_target_id(target_id: str, target_type: str) -> List[Rev
             updated_at=review.updated_at
         ) for review in reviews
     ]
-
 
 async def create_review(review_in: ReviewCreate) -> ReviewOut:
     review = Review(
@@ -56,9 +54,8 @@ async def create_review(review_in: ReviewCreate) -> ReviewOut:
         updated_at=review.updated_at
     )
 
-
 async def update_review(review_id: PydanticObjectId, review_in: ReviewUpdate) -> ReviewOut:
-    review = await get_review_by_id(review_id)
+    review = await get_review(review_id)
     
     if review_in.rating:
         review.rating = review_in.rating
@@ -79,7 +76,21 @@ async def update_review(review_id: PydanticObjectId, review_in: ReviewUpdate) ->
         updated_at=review.updated_at
     )
 
-
 async def delete_review(review_id: PydanticObjectId) -> None:
-    review = await get_review_by_id(review_id)
+    review = await get_review(review_id)
     await review.delete()
+
+async def get_all_reviews() -> List[ReviewOut]:
+    reviews = await Review.find_all().to_list()
+    return [
+        ReviewOut(
+            id=review.id,
+            user_id=review.user_id,
+            target_id=review.target_id,
+            target_type=review.target_type,
+            rating=review.rating,
+            comment=review.comment,
+            created_at=review.created_at,
+            updated_at=review.updated_at
+        ) for review in reviews
+    ]

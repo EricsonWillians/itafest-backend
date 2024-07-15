@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from datetime import datetime
 
-async def get_ticket_by_id(ticket_id: PydanticObjectId) -> Optional[TicketOut]:
+async def get_ticket(ticket_id: PydanticObjectId) -> Optional[TicketOut]:
     ticket = await Ticket.get(ticket_id)
     if ticket:
         return TicketOut(
@@ -45,7 +45,7 @@ async def create_ticket(ticket_in: TicketCreate) -> TicketOut:
     )
 
 async def update_ticket(ticket_id: PydanticObjectId, ticket_in: TicketUpdate) -> TicketOut:
-    ticket = await get_ticket_by_id(ticket_id)
+    ticket = await get_ticket(ticket_id)
     
     if ticket_in.type:
         ticket.type = ticket_in.type
@@ -77,7 +77,7 @@ async def update_ticket(ticket_id: PydanticObjectId, ticket_in: TicketUpdate) ->
     )
 
 async def delete_ticket(ticket_id: PydanticObjectId) -> None:
-    ticket = await get_ticket_by_id(ticket_id)
+    ticket = await get_ticket(ticket_id)
     await ticket.delete()
 
 async def get_all_tickets() -> List[TicketOut]:

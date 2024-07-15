@@ -7,7 +7,7 @@ from datetime import datetime
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-async def get_user_by_id(user_id: PydanticObjectId) -> Optional[User]:
+async def get_user(user_id: PydanticObjectId) -> Optional[User]:
     user = await User.get(user_id)
     if user:
         return user
