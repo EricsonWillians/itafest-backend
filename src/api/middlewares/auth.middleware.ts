@@ -163,6 +163,62 @@ export const requireBusinessOwnership = async (
   await next();
 };
 
+/**
+ * Ad owner authorization middleware
+ */
+export const requireAdOwnership = async (
+  ctx: Context,
+  next: () => Promise<void>
+) => {
+  const user = ctx.state.user;
+  const adId = ctx.params.id;
+
+  if (!user) {
+    throw new AuthError('User not authenticated', 'NO_USER');
+  }
+
+  if (user.role === 'admin') {
+    await next();
+    return;
+  }
+
+  if (!adId) {
+    ctx.response.status = Status.BadRequest;
+    ctx.response.body = {
+      success: false,
+      error: 'INVALID_AD_ID',
+      message: 'Ad ID is required',
+    };
+    return;
+  }
+
+  // Fetch the ad to check ownership
+  const ad = await AdService.getAdById(adId);
+
+  if (!ad) {
+    ctx.response.status = Status.NotFound;
+    ctx.response.body = {
+      success: false,
+      error: 'NOT_FOUND',
+      message: 'Advertisement not found',
+    };
+    return;
+  }
+
+  // Check if the user owns the ad (by comparing businessId)
+  if (!user.businessId || ad.businessId !== user.businessId) {
+    ctx.response.status = Status.Forbidden;
+    ctx.response.body = {
+      success: false,
+      error: 'FORBIDDEN',
+      message: 'You do not have permission to access this advertisement',
+    };
+    return;
+  }
+
+  await next();
+};
+
 // Types for extending Oak's State interface
 declare module "oak" {
   interface State {

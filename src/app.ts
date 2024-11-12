@@ -3,8 +3,10 @@ import { Application, Router, Status, isHttpError } from "oak";
 import { load } from "dotenv";
 import { oakCors } from "cors";
 import { businessRouter } from "@/api/routes/business.routes.ts";
+import { adRouter } from "@/api/routes/ad.routes.ts";
 import { config } from "@/config/env.config.ts";
 import { BusinessError } from "@/services/business.service.ts";
+import { AdError } from "@/services/ad.service.ts";
 
 console.log("🚀 Initializing application...");
 
@@ -45,8 +47,9 @@ app.use(async (ctx, next) => {
   } catch (error) {
     console.error("❌ Error caught in global handler:", error);
 
-    if (error instanceof BusinessError) {
+    if (error instanceof BusinessError ) {
       // Handle business logic errors
+      // TODO AD ROUTES ERROR HANDLING
       const status = {
         'INVALID_DATA': Status.BadRequest,
         'NOT_FOUND': Status.NotFound,
@@ -104,6 +107,8 @@ healthRouter.get("/health", (ctx) => {
 app.use(healthRouter.routes());
 app.use(businessRouter.routes());
 app.use(businessRouter.allowedMethods());
+app.use(adRouter.routes());
+app.use(adRouter.allowedMethods());
 
 // 404 handler
 app.use((ctx) => {
