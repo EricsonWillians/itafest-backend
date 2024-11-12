@@ -1,60 +1,128 @@
 // src/app.ts
-import { Application, Router } from "oak";
+import { Application, Router, Status, isHttpError } from "oak";
 import { load } from "dotenv";
-import { db } from "@/config/firebase.config.ts";
 import { oakCors } from "cors";
+import { businessRouter } from "@/api/routes/business.routes.ts";
+import { config } from "@/config/env.config.ts";
+import { BusinessError } from "@/services/business.service.ts";
 
-// Load environment variables
-const env = await load();
+console.log("🚀 Initializing application...");
 
 // Initialize application
 const app = new Application();
-const router = new Router();
 
 // CORS middleware
 app.use(oakCors({
   origin: "*",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
+  optionsSuccessStatus: 200
 }));
+
+// Request logging middleware
+app.use(async (ctx, next) => {
+  const start = Date.now();
+  const { method, url } = ctx.request;
+  console.log(`📥 ${method} ${url.pathname} - Request received`);
+  
+  try {
+    await next();
+    
+    const ms = Date.now() - start;
+    const status = ctx.response.status;
+    console.log(`📤 ${method} ${url.pathname} - ${status} - ${ms}ms`);
+  } catch (error) {
+    const ms = Date.now() - start;
+    console.error(`❌ ${method} ${url.pathname} - Error - ${ms}ms`, error);
+    throw error;
+  }
+});
 
 // Error handling middleware
 app.use(async (ctx, next) => {
   try {
     await next();
-  } catch (err) {
-    ctx.response.status = err.status || 500;
-    ctx.response.body = {
-      success: false,
-      message: err.message,
-      stack: env["DENO_ENV"] === "development" ? err.stack : undefined
-    };
+  } catch (error) {
+    console.error("❌ Error caught in global handler:", error);
+
+    if (error instanceof BusinessError) {
+      // Handle business logic errors
+      const status = {
+        'INVALID_DATA': Status.BadRequest,
+        'NOT_FOUND': Status.NotFound,
+        'INVALID_ID': Status.BadRequest,
+        'CREATE_FAILED': Status.InternalServerError,
+        'UPDATE_FAILED': Status.InternalServerError,
+        'DELETE_FAILED': Status.InternalServerError
+      }[error.code] || Status.InternalServerError;
+
+      ctx.response.status = status;
+      ctx.response.body = {
+        success: false,
+        error: error.code,
+        message: error.message
+      };
+    } else if (isHttpError(error)) {
+      // Handle Oak HTTP errors
+      ctx.response.status = error.status;
+      ctx.response.body = {
+        success: false,
+        error: error.name,
+        message: error.message
+      };
+    } else {
+      // Handle unexpected errors
+      ctx.response.status = Status.InternalServerError;
+      ctx.response.body = {
+        success: false,
+        error: 'InternalServerError',
+        message: 'An unexpected error occurred',
+        stack: config.app.environment === "development" ? error.stack : undefined
+      };
+    }
   }
 });
 
-// Health check endpoint
-router.get("/health", (ctx) => {
+// API versioning middleware
+app.use(async (ctx, next) => {
+  ctx.response.headers.set("X-API-Version", "1.0.0");
+  await next();
+});
+
+// Health check route
+const healthRouter = new Router();
+healthRouter.get("/health", (ctx) => {
   ctx.response.body = {
     status: "healthy",
     timestamp: new Date().toISOString(),
-    env: env["DENO_ENV"] || "development"
+    env: config.app.environment,
+    version: "1.0.0"
   };
 });
 
-// API version prefix
-const apiRouter = new Router({
-  prefix: "/api/v1"
+// Mount routes
+app.use(healthRouter.routes());
+app.use(businessRouter.routes());
+app.use(businessRouter.allowedMethods());
+
+// 404 handler
+app.use((ctx) => {
+  ctx.response.status = Status.NotFound;
+  ctx.response.body = {
+    success: false,
+    error: 'NotFound',
+    message: `Route ${ctx.request.url.pathname} not found`
+  };
 });
 
-// Mount routers
-app.use(router.routes());
-app.use(router.allowedMethods());
-app.use(apiRouter.routes());
-app.use(apiRouter.allowedMethods());
-
 // Start server
-const port = parseInt(env["PORT"] || "8000");
-console.log(`🚀 Server starting on http://localhost:${port}`);
-console.log(`🌍 Environment: ${env["DENO_ENV"] || "development"}`);
-
-await app.listen({ port });
+const port = config.app.port;
+try {
+  console.log(`🚀 Starting server on http://localhost:${port}`);
+  console.log(`🌍 Environment: ${config.app.environment}`);
+  await app.listen({ port });
+  console.log("✅ Server started successfully");
+} catch (error) {
+  console.error("❌ Failed to start server:", error);
+  Deno.exit(1);
+}

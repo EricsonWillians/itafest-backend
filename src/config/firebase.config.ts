@@ -1,30 +1,48 @@
 // src/config/firebase.config.ts
-import { initializeApp } from "firebase/app";
-import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { getStorage } from "firebase-admin/storage";
+import { config } from "./env.config.ts";
 
-const firebaseConfig = {
-  apiKey: Deno.env.get("FIREBASE_API_KEY") || "",
-  authDomain: Deno.env.get("FIREBASE_AUTH_DOMAIN") || "",
-  projectId: Deno.env.get("FIREBASE_PROJECT_ID") || "",
-  storageBucket: Deno.env.get("FIREBASE_STORAGE_BUCKET") || "",
-  messagingSenderId: Deno.env.get("FIREBASE_MESSAGING_SENDER_ID") || "",
-  appId: Deno.env.get("FIREBASE_APP_ID") || ""
-};
+console.log("🔥 Initializing Firebase Admin SDK...");
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase Admin if not already initialized
+const apps = getApps();
+const app = apps.length === 0 
+  ? initializeApp({
+      credential: cert({
+        projectId: config.firebase.projectId,
+        clientEmail: config.firebase.clientEmail,
+        privateKey: config.firebase.privateKey,
+      }),
+      projectId: config.firebase.projectId,
+      storageBucket: config.firebase.storageBucket
+    })
+  : apps[0];
+
+// Initialize Firebase services
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Connect to emulators in development
-if (Deno.env.get("DENO_ENV") === "development") {
-  connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
-  connectFirestoreEmulator(db, "localhost", 8080);
-  connectStorageEmulator(storage, "localhost", 9199);
-  
-  console.log("🔧 Using Firebase Emulators");
+// Connect to Emulators if in Development
+if (config.app.environment === "development") {
+  console.log("🔧 Setting up Firebase Emulators...");
+  try {
+    const EMULATOR_HOST_AUTH = "localhost:9099";
+    const EMULATOR_HOST_FIRESTORE = "localhost:8080";
+    const EMULATOR_HOST_STORAGE = "localhost:9199";
+
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = EMULATOR_HOST_AUTH;
+    process.env.FIRESTORE_EMULATOR_HOST = EMULATOR_HOST_FIRESTORE;
+    process.env.FIREBASE_STORAGE_EMULATOR_HOST = EMULATOR_HOST_STORAGE;
+
+    console.log("✅ Successfully configured Firebase Emulators");
+  } catch (error) {
+    console.error("❌ Error configuring emulators:", error);
+    throw error;
+  }
 }
 
-export { auth, db, storage };
+export { app, auth, db, storage };
