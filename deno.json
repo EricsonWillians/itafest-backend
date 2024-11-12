@@ -1,0 +1,15 @@
+{
+    "tasks": {
+      "dev": "deno run --allow-net --allow-read --allow-env --watch src/app.ts"
+    },
+    "imports": {
+      "@/": "./src/",
+      "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js",
+      "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js",
+      "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js",
+      "cors": "https://deno.land/x/cors@v1.2.2/mod.ts",
+      "dotenv": "https://deno.land/std@0.212.0/dotenv/mod.ts"
+    }
+  }
