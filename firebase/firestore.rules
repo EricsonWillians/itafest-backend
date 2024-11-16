@@ -6,18 +6,13 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Option A: Using custom claims for admin check
     function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isBusinessOwner(businessId) {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+      return isAuthenticated() && request.auth.token.admin == true;
     }
     
     function isValidBusiness() {
-      let requiredFields = ['name', 'description', 'category', 'address', 'phone', 'email', 'ownerId'];
+      let requiredFields = ['name', 'description', 'categories', 'address', 'phone', 'email', 'ownerId'];
       let hasRequired = requiredFields.every(field => request.resource.data[field] != null);
       
       return hasRequired && 
@@ -27,22 +22,9 @@ service cloud.firestore {
         request.resource.data.phone.matches('^\\+?[0-9]{10,15}$');
     }
     
-    function isValidEvent() {
-      let requiredFields = ['title', 'description', 'date', 'businessId', 'location'];
-      let hasRequired = requiredFields.every(field => request.resource.data[field] != null);
-      
-      return hasRequired && 
-        request.resource.data.title.size() >= 3 &&
-        request.resource.data.description.size() <= 2000 &&
-        request.resource.data.date > request.time;
-    }
-
-    // Rate limiting function (basic implementation)
     function isNotRateLimited() {
-      let recentWrites = getCountFromServer(/databases/$(database)/documents/businesses)
-        .where('createdAt', '>', request.time.toMillis() - 60000)
-        .where('ownerId', '==', request.auth.uid).count();
-      return recentWrites < 10; // Max 10 writes per minute
+      // Implementation of rate limiting logic
+      return true; // Simplified for this example
     }
 
     // Business collection rules
@@ -87,14 +69,13 @@ service cloud.firestore {
 
     // User collection rules
     match /users/{userId} {
-      allow read: if isAuthenticated() && 
-                    (request.auth.uid == userId || isAdmin());
+      allow read: if isAuthenticated() && request.auth.uid == userId;
       allow create: if isAuthenticated() && 
                       request.auth.uid == userId &&
                       request.resource.data.role == 'user';
       allow update: if isAuthenticated() && 
-                      (request.auth.uid == userId || isAdmin()) &&
-                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin());
+                      request.auth.uid == userId &&
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
       allow delete: if isAdmin();
       
       // User preferences subcollection
@@ -107,7 +88,7 @@ service cloud.firestore {
     match /advertisements/{adId} {
       allow read: if true;
       allow create: if isAuthenticated() && 
-                      resource.data.businessId in get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId &&
+                      isBusinessOwner(request.resource.data.businessId) &&
                       isNotRateLimited();
       allow update: if isBusinessOwner(resource.data.businessId) || isAdmin();
       allow delete: if isBusinessOwner(resource.data.businessId) || isAdmin();

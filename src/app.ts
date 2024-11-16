@@ -7,6 +7,8 @@ import { adRouter } from "@/api/routes/ad.routes.ts";
 import { config } from "@/config/env.config.ts";
 import { BusinessError } from "@/services/business.service.ts";
 import { AdError } from "@/services/ad.service.ts";
+import { categoryRouter } from "@/api/routes/category.routes.ts";
+import { tagRouter } from "@/api/routes/tag.routes.ts";
 
 console.log("🚀 Initializing application...");
 
@@ -105,6 +107,10 @@ healthRouter.get("/health", (ctx) => {
 
 // Mount routes
 app.use(healthRouter.routes());
+app.use(categoryRouter.routes());
+app.use(categoryRouter.allowedMethods());
+app.use(tagRouter.routes());
+app.use(tagRouter.allowedMethods());
 app.use(businessRouter.routes());
 app.use(businessRouter.allowedMethods());
 app.use(adRouter.routes());

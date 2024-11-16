@@ -1,0 +1,276 @@
+{
+    "_type": "export",
+    "__export_format": 4,
+    "__export_date": "2024-11-12T10:30:00.000Z",
+    "__export_source": "insomnia.desktop.app:v8.4.5",
+    "resources": [
+      {
+        "_id": "env_base",
+        "parentId": "wrk_itafest",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "name": "Base Environment",
+        "data": {
+          "baseUrl": "http://localhost:8000",
+          "apiVersion": "v1"
+        },
+        "dataPropertyOrder": {
+          "&": ["baseUrl", "apiVersion"]
+        },
+        "color": null,
+        "isPrivate": false,
+        "metaSortKey": 1699782000000,
+        "_type": "environment"
+      },
+      {
+        "_id": "env_development",
+        "parentId": "env_base",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "name": "Development",
+        "data": {
+          "authToken": "your_auth_token_here"
+        },
+        "dataPropertyOrder": {
+          "&": ["authToken"]
+        },
+        "color": "#00ff00",
+        "isPrivate": false,
+        "metaSortKey": 1699782000000,
+        "_type": "environment"
+      },
+      {
+        "_id": "req_get_businesses",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses",
+        "name": "Get All Businesses",
+        "description": "Fetch businesses with optional filters",
+        "method": "GET",
+        "parameters": [
+          {
+            "name": "page",
+            "value": "1",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "value": "10",
+            "description": "Items per page"
+          },
+          {
+            "name": "categoryId",
+            "value": "",
+            "description": "Filter by category ID"
+          },
+          {
+            "name": "categoryType",
+            "value": "",
+            "description": "Filter by category type"
+          },
+          {
+            "name": "search",
+            "value": "",
+            "description": "Search term"
+          },
+          {
+            "name": "sort",
+            "value": "name",
+            "description": "Sort field"
+          },
+          {
+            "name": "subscriptionStatus",
+            "value": "",
+            "description": "Filter by subscription status"
+          }
+        ],
+        "headers": [],
+        "_type": "request"
+      },
+      {
+        "_id": "req_search_businesses",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/search",
+        "name": "Search Businesses",
+        "description": "Search businesses by term with optional filters",
+        "method": "GET",
+        "parameters": [
+          {
+            "name": "q",
+            "value": "restaurant",
+            "description": "Search term"
+          },
+          {
+            "name": "limit",
+            "value": "10",
+            "description": "Results limit"
+          },
+          {
+            "name": "categoryType",
+            "value": "",
+            "description": "Filter by category type"
+          }
+        ],
+        "headers": [],
+        "_type": "request"
+      },
+      {
+        "_id": "req_get_businesses_by_category",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/category/123",
+        "name": "Get Businesses by Category",
+        "description": "Fetch businesses for a specific category",
+        "method": "GET",
+        "parameters": [
+          {
+            "name": "page",
+            "value": "1"
+          },
+          {
+            "name": "limit",
+            "value": "10"
+          }
+        ],
+        "headers": [],
+        "_type": "request"
+      },
+      {
+        "_id": "req_get_business_by_id",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123",
+        "name": "Get Business by ID",
+        "description": "Fetch a single business by ID",
+        "method": "GET",
+        "headers": [],
+        "_type": "request"
+      },
+      {
+        "_id": "req_create_business",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses",
+        "name": "Create Business",
+        "description": "Create a new business",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer {{ _.authToken }}"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mimeType": "application/json",
+          "text": "{\n  \"name\": \"Test Business\",\n  \"description\": \"A test business\",\n  \"address\": \"123 Test St\",\n  \"phone\": \"+55123456789\",\n  \"email\": \"test@business.com\",\n  \"category\": {\n    \"id\": \"123\",\n    \"type\": \"restaurant\"\n  },\n  \"ownerId\": \"user123\",\n  \"operatingHours\": {\n    \"monday\": {\n      \"open\": \"09:00\",\n      \"close\": \"18:00\"\n    }\n  },\n  \"socialMedia\": {\n    \"instagram\": \"@testbusiness\",\n    \"facebook\": \"testbusiness\",\n    \"website\": \"https://testbusiness.com\"\n  }\n}"
+        },
+        "_type": "request"
+      },
+      {
+        "_id": "req_update_business",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123",
+        "name": "Update Business",
+        "description": "Update an existing business",
+        "method": "PUT",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer {{ _.authToken }}"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mimeType": "application/json",
+          "text": "{\n  \"name\": \"Updated Business Name\",\n  \"description\": \"Updated description\",\n  \"category\": {\n    \"id\": \"456\",\n    \"type\": \"cafe\"\n  }\n}"
+        },
+        "_type": "request"
+      },
+      {
+        "_id": "req_delete_business",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123",
+        "name": "Delete Business",
+        "description": "Delete a business (Admin only)",
+        "method": "DELETE",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer {{ _.authToken }}"
+          }
+        ],
+        "_type": "request"
+      },
+      {
+        "_id": "req_business_analytics",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123/analytics",
+        "name": "Get Business Analytics",
+        "description": "Get analytics for a specific business",
+        "method": "GET",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer {{ _.authToken }}"
+          }
+        ],
+        "_type": "request"
+      },
+      {
+        "_id": "req_manage_subscription",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123/subscription",
+        "name": "Manage Subscription",
+        "description": "Manage business subscription",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer {{ _.authToken }}"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mimeType": "application/json",
+          "text": "{\n  \"plan\": \"premium\",\n  \"duration\": \"monthly\"\n}"
+        },
+        "_type": "request"
+      },
+      {
+        "_id": "req_check_business_exists",
+        "parentId": "fld_businesses",
+        "modified": 1699782000000,
+        "created": 1699782000000,
+        "url": "{{ _.baseUrl }}/api/{{ _.apiVersion }}/businesses/123",
+        "name": "Check Business Exists",
+        "description": "Check if a business exists",
+        "method": "HEAD",
+        "headers": [],
+        "_type": "request"
+      }
+    ]
+  }
