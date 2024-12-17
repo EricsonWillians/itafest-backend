@@ -136,11 +136,13 @@ export class BusinessService {
       await this.validateBusinessData(data);
       
       const now = new Date();
-      const businessData = {
+      const businessData: Partial<Business> = {
         ...data,
-        subscriptionStatus: 'free' as const,
+        subscriptionStatus: 'free',
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        categories: data.categories || [], // Ensure categories is an array
+        tags: data.tags || []              // Ensure tags is an array
       };
   
       console.log("🔄 Getting Firestore collection reference...");
@@ -148,18 +150,23 @@ export class BusinessService {
       
       // Start a transaction to update business, categories, and tags
       const result = await db.runTransaction(async (transaction) => {
-        // First, perform all reads
-        const categoryDocs = await Promise.all(
-          data.categories.map(category => 
-            transaction.get(this.getCategoryCollection().doc(category.id))
-          )
-        );
-  
-        const tagDocs = await Promise.all(
-          data.tags.map(tag => 
-            transaction.get(this.getTagCollection().doc(tag.id))
-          )
-        );
+        // Safely handle categories
+        const categoryDocs = businessData.categories.length > 0
+          ? await Promise.all(
+              businessData.categories.map(category => 
+                transaction.get(this.getCategoryCollection().doc(category.id))
+              )
+            )
+          : [];
+
+        // Safely handle tags
+        const tagDocs = businessData.tags.length > 0
+          ? await Promise.all(
+              businessData.tags.map(tag => 
+                transaction.get(this.getTagCollection().doc(tag.id))
+              )
+            )
+          : [];
   
         // Create the business document reference
         const docRef = businessesRef.doc();
@@ -195,7 +202,7 @@ export class BusinessService {
       });
   
       console.log("✅ Business created successfully with ID:", result.id);
-      return result;
+      return result as Business;
   
     } catch (error) {
       console.error("❌ Error in createBusiness:", error);
