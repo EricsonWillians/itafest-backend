@@ -28,6 +28,12 @@ router
     await authController.login(ctx);
   })
 
+  // Google SSO sign-in endpoint
+  .post("/google", async (ctx) => {
+    console.log("📥 [POST] /api/v1/auth/google - Processing Google SSO");
+    await authController.googleSignIn(ctx);
+  })
+
   // Example placeholder for token refresh (NOT recommended for production)
   .post("/refresh", async (ctx) => {
     console.log("📥 [POST] /api/v1/auth/refresh - Attempting token refresh");

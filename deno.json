@@ -1,6 +1,10 @@
 {
   "tasks": {
-    "dev": "deno run --allow-net --allow-read --allow-env --allow-write --watch src/app.ts"
+    "dev": "deno run --allow-net --allow-read --allow-env --allow-write --watch src/app.ts",
+    "prod": "deno run --allow-net --allow-read --allow-env --allow-write src/app.ts",
+    "test": "bash ./scripts/test-setup.sh",
+    "test:dev": "DENO_ENV=development bash ./scripts/test-setup.sh",
+    "test:prod": "DENO_ENV=production bash ./scripts/test-setup.sh"
   },
   "imports": {
     "@/": "./src/",
@@ -12,5 +16,18 @@
     "firebase-admin/storage": "npm:firebase-admin/storage",
     "cors": "https://deno.land/x/cors@v1.2.2/mod.ts",
     "dotenv": "https://deno.land/std@0.212.0/dotenv/mod.ts"
+  },
+  "fmt": {
+    "semiColons": true,
+    "singleQuote": true,
+    "lineWidth": 120,
+    "proseWrap": "preserve"
+  },
+  "lint": {
+    "rules": {
+      "include": [
+        "no-explicit-any"
+      ]
+    }
   }
 }

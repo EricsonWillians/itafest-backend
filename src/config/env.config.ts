@@ -1,9 +1,155 @@
-// src/config/env.config.ts
 import { load } from "dotenv";
 
+// Define required environment variables
+const REQUIRED_ENV_VARS = {
+  app: ['PORT', 'DENO_ENV', 'SKIP_AUTH'],
+  firebase: [
+    'FIREBASE_API_KEY',
+    'FIREBASE_AUTH_DOMAIN',
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_STORAGE_BUCKET',
+    'FIREBASE_MESSAGING_SENDER_ID',
+    'FIREBASE_APP_ID',
+    'FIREBASE_MEASUREMENT_ID',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_PRIVATE_KEY'
+  ]
+} as const;
+
 /**
- * Defines which environment variables our application expects.
+ * Load environment variables with better error handling
  */
+async function loadEnvConfig() {
+  try {
+    const env = await load();
+    console.log("📝 Environment variables loaded successfully");
+    return env;
+  } catch (error) {
+    console.error("❌ Failed to load environment variables:", error);
+    throw new Error("Failed to load environment configuration");
+  }
+}
+
+/**
+ * Validate that an environment variable exists and has a value
+ */
+function assertEnv(env: Record<string, string>, key: string): string {
+  const value = env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value.trim();
+}
+
+/**
+ * Format private key with improved handling of various formats
+ */
+function formatPrivateKey(key: string): string {
+  try {
+    // Remove any surrounding quotes
+    key = key.replace(/^['"]|['"]$/g, '');
+    
+    // Check if it's already properly formatted
+    if (key.includes("-----BEGIN PRIVATE KEY-----") && 
+        key.includes("-----END PRIVATE KEY-----")) {
+      return key;
+    }
+
+    // Handle escaped newlines
+    const cleanKey = key
+      .replace(/\\n/g, '\n')
+      .replace(/\s+/g, '\n')
+      .trim();
+
+    const formattedKey = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
+
+    // Validate the formatted key
+    if (!formattedKey.match(/-----BEGIN PRIVATE KEY-----\n.+\n-----END PRIVATE KEY-----/s)) {
+      throw new Error("Invalid private key format after processing");
+    }
+
+    return formattedKey;
+  } catch (error) {
+    console.error("❌ Failed to format private key:", error);
+    throw new Error("Invalid private key format");
+  }
+}
+
+/**
+ * Validate all required environment variables
+ */
+function validateConfig(env: Record<string, string>) {
+  const missing: string[] = [];
+
+  Object.values(REQUIRED_ENV_VARS).flat().forEach(key => {
+    if (!env[key]) {
+      missing.push(key);
+    }
+  });
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+// Load and process configuration
+const env = await loadEnvConfig();
+validateConfig(env);
+
+const environment = env.DENO_ENV || "development";
+const skipAuth = env.SKIP_AUTH === "true" || false;
+
+// Production safety checks
+if (environment === "production") {
+  if (skipAuth) {
+    throw new Error("SKIP_AUTH cannot be set to 'true' in production!");
+  }
+  
+  if (!env.FIREBASE_PRIVATE_KEY?.includes("PRIVATE KEY")) {
+    throw new Error("Invalid Firebase private key format in production!");
+  }
+}
+
+// Build the configuration object
+const rawConfig = {
+  app: {
+    port: Number(env.PORT) || 8000,
+    environment,
+    skipAuth,
+  },
+  firebase: {
+    apiKey: assertEnv(env, "FIREBASE_API_KEY"),
+    authDomain: assertEnv(env, "FIREBASE_AUTH_DOMAIN"),
+    projectId: assertEnv(env, "FIREBASE_PROJECT_ID"),
+    storageBucket: assertEnv(env, "FIREBASE_STORAGE_BUCKET"),
+    messagingSenderId: assertEnv(env, "FIREBASE_MESSAGING_SENDER_ID"),
+    appId: assertEnv(env, "FIREBASE_APP_ID"),
+    measurementId: assertEnv(env, "FIREBASE_MEASUREMENT_ID"),
+    clientEmail: assertEnv(env, "FIREBASE_CLIENT_EMAIL"),
+    privateKey: formatPrivateKey(assertEnv(env, "FIREBASE_PRIVATE_KEY")),
+  },
+};
+
+// Environment-specific logging
+if (environment === "development") {
+  console.log("📝 Development Configuration:", {
+    environment,
+    port: rawConfig.app.port,
+    projectId: rawConfig.firebase.projectId,
+    skipAuth,
+    clientEmail: rawConfig.firebase.clientEmail,
+  });
+} else {
+  console.log(`🚀 Production Configuration:`, {
+    environment,
+    port: rawConfig.app.port,
+    projectId: rawConfig.firebase.projectId,
+    clientEmail: rawConfig.firebase.clientEmail,
+    privateKeyValid: rawConfig.firebase.privateKey.includes("PRIVATE KEY"),
+  });
+}
+
+// Type definitions
 interface AppConfig {
   port: number;
   environment: string;
@@ -22,87 +168,16 @@ interface FirebaseConfig {
   privateKey: string;
 }
 
-/**
- * The master interface for our configuration object.
- */
-interface Config {
+export interface Config {
   app: AppConfig;
   firebase: FirebaseConfig;
 }
 
-/**
- * Helper function to format the private key properly,
- * especially if it comes with escaped `\n`.
- */
-function formatPrivateKey(key: string): string {
-  if (key.includes("\n")) {
-    return key; // Already has newlines, so we assume it's correct
-  }
-  
-  // Remove any leading/trailing lines if present
-  const privateKeyContent = key
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\\n/g, "\n")
-    .replace(/\r?\n|\r/g, ""); // remove stray newlines or carriage returns
-
-  return `-----BEGIN PRIVATE KEY-----\n${privateKeyContent}\n-----END PRIVATE KEY-----`;
-}
-
-// 1. Load Environment Variables
-const env = await load();
-
-// 2. Validate critical environment variables (fail fast if missing)
-function assertEnv(key: string): string {
-  const value = env[key];
-  if (!value) {
-    throw new Error(`❌ Missing required environment variable: ${key}`);
-  }
-  return value;
-}
-
-// 3. Build up our configuration
-const rawConfig: Config = {
-  app: {
-    port: Number(env.PORT) || 8000,
-    environment: env.DENO_ENV || "development",
-    skipAuth: env.SKIP_AUTH === "true" || false,
-  },
-  firebase: {
-    apiKey: assertEnv("FIREBASE_API_KEY"),
-    authDomain: assertEnv("FIREBASE_AUTH_DOMAIN"),
-    projectId: assertEnv("FIREBASE_PROJECT_ID"),
-    storageBucket: assertEnv("FIREBASE_STORAGE_BUCKET"),
-    messagingSenderId: assertEnv("FIREBASE_MESSAGING_SENDER_ID"),
-    appId: assertEnv("FIREBASE_APP_ID"),
-    measurementId: assertEnv("FIREBASE_MEASUREMENT_ID"),
-    clientEmail: assertEnv("FIREBASE_CLIENT_EMAIL"),
-    privateKey: formatPrivateKey(assertEnv("FIREBASE_PRIVATE_KEY")),
-  },
+// Export the final configuration
+export const config: Config = {
+  app: rawConfig.app,
+  firebase: rawConfig.firebase,
 };
 
-// 4. Optional: Protect production from `skipAuth` misuse
-if (
-  rawConfig.app.environment === "production" &&
-  rawConfig.app.skipAuth === true
-) {
-  throw new Error(`❌ 'SKIP_AUTH' cannot be set to "true" in production!`);
-}
-
-// 5. Provide a single exported `config` object
-export const config: Config = rawConfig;
-
-// 6. Log safe parts of the config (no secrets)
-if (config.app.environment === "development") {
-  console.log("📝 Environment Configuration (dev mode):", {
-    environment: config.app.environment,
-    port: config.app.port,
-    projectId: config.firebase.projectId,
-    skipAuth: config.app.skipAuth,
-  });
-} else {
-  // In production, log less or log as structured JSON if desired
-  console.log(
-    `🚀 Running in ${config.app.environment} mode on port ${config.app.port}`
-  );
-}
+// Additional validation of the final config
+Object.freeze(config);
